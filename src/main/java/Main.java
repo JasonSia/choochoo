@@ -46,14 +46,18 @@ public class Main {
           //still moving
           train.setTimeToReachDestination(train.getTimeToReachDestination() - 1);
           //use dijsktra again
+          //print log
         }else if (!train.getCurrentLocation().equalsIgnoreCase(train.getDestination())
                 && train.getTimeToReachDestination() == 1 ){
           //reached destination
           train.setCurrentLocation(train.getDestination());
           train.setTimeToReachDestination(0);
-          //pick up max parcel algorithm
+          train.setDestination(null);
+          //get first x packages till full first
 
-          //djisktra algorithm to find fastest path to destination
+          //todo pick up max parcel algorithm
+          //todo djisktra algorithm to find fastest path to destination
+          //print log
         }else {
           //not moving
         }
@@ -68,10 +72,10 @@ public class Main {
         // find best train to get package to send
         int shortestDistanceForTrainToReach = Integer.MAX_VALUE;
         Train nearestTrain = null;
+        //todo if multiple train of same destination need to compare capacity
         for (Train train : ctx.getTrains()) {
           // only get train if train is not moving
-          if (train.getCurrentLocation().equalsIgnoreCase(train.getDestination())
-              && train.getTimeToReachDestination() == 0) {
+          if (train.getDestination() == null) {
             Graph pathForTrain =
                 Dijkstra.calculateShortestPathFromSource(
                     ctx.getGraph(), ctx.getNodes().get(train.getCurrentLocation()));
@@ -152,7 +156,15 @@ public class Main {
         .collect(Collectors.toList());
   }
 
-  private static void loadTrain() {}
+  private static void loadTrain(String destination, Train train, Station station) {
+    List<MailPackage> mailPackage = station.getMailPackages().stream().filter(p -> p.getDestination().equalsIgnoreCase(destination)).collect(Collectors.toList());
+    train.getMailPackages().addAll(mailPackage);
+    station.getMailPackages().removeAll(mailPackage);
+  }
 
-  private static void unloadTrain() {}
+  private static void unloadTrain(String destination, Train train, Station station) {
+    List<MailPackage> mailPackage = train.getMailPackages().stream().filter(p -> p.getDestination().equalsIgnoreCase(destination)).collect(Collectors.toList());
+    station.getMailPackages().addAll(mailPackage);
+    train.getMailPackages().removeAll(mailPackage);
+  }
 }
