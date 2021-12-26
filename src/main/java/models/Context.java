@@ -12,14 +12,14 @@ import java.util.Map;
 
 @Getter
 public class Context {
-    List<Station> stations = new ArrayList();
+    Map<String, Station> stations = new HashMap<>();
     List<Route> routes = new ArrayList<>();
     List<MailPackage> mailPackages = new ArrayList<>();
     List<Train> trains = new ArrayList<>();
     Map<String, Node> nodes = new HashMap<>();
     Graph graph = new Graph();
 
-    public Context(List<Station> stations,List<Route> routes,List<MailPackage> mailPackages, List<Train> trains){
+    public Context(Map<String, Station> stations,List<Route> routes,List<MailPackage> mailPackages, List<Train> trains){
         this.stations = stations;
         this.routes = routes;
         this.mailPackages = mailPackages;

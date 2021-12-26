@@ -2,9 +2,15 @@ import dijkstra.Dijkstra;
 import dijkstra.Graph;
 import dijkstra.Node;
 import models.Context;
+import models.MailPackage;
 import models.Route;
 import models.Station;
+import models.Train;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class Main {
@@ -12,59 +18,140 @@ public class Main {
   public static void main(String args[]) {
     System.out.println("initializing choo choo");
     Context ctx = InitializeSystem.readInput(args);
-    // set all mail packages to stations
-    generatePackagesInRespectiveStations(ctx);
 
-    // generate routing map
-    generateRoutingMap(ctx);
+    InitializeSystem.generatePackagesInRespectiveStations(ctx);
+    InitializeSystem.placeTrainInStations(ctx);
+    InitializeSystem.generateRoutingMap(ctx);
 
-    //to get shortest path from A to anywhere.
-    Graph shortestPathGraph = Dijkstra.calculateShortestPathFromSource(ctx.getGraph(), ctx.getNodes().get("A"));
-    
+    //    // to get shortest path from A to anywhere.
+    //    Graph shortestPathGraph =
+    //            Dijkstra.calculateShortestPathFromSource(ctx.getGraph(), ctx.getNodes().get("A"));
+
+    deliverPackages(ctx);
     // loop through stations
     // find closest trains to stations to start transporting with greedy algorithm
     // station controlling trains to come
     // similar to grab on demand service
-
-    System.out.println(ctx);
   }
 
-  private static void generateRoutingMap(Context ctx) {
-    for (Station station : ctx.getStations()) {
-      Node node = ctx.getNodes().get(station.getName());
-      if (node == null){
-        node = new Node(station.getName());
-        ctx.getNodes().put(station.getName(), node);
-      }
-      for (Route route : ctx.getRoutes()) {
-        if (!route.getStationA().equalsIgnoreCase(route.getStationB())) {
-          if (route.getStationA().equalsIgnoreCase(station.getName())){
-            Node nodeB = ctx.getNodes().get(route.getStationB());
-            if (nodeB == null){
-              nodeB = new Node(route.getStationB());
-              ctx.getNodes().put(route.getStationB(), nodeB);
-            }
-            node.addDestination(nodeB, route.getTime());
-          }else if (route.getStationB().equalsIgnoreCase(station.getName())){
-            Node nodeA = ctx.getNodes().get(route.getStationA());
-            if (nodeA == null){
-              nodeA = new Node(route.getStationA());
-              ctx.getNodes().put(route.getStationA(), nodeA);
-            }
-            node.addDestination(nodeA, route.getTime());
-          }
+  private static void deliverPackages(Context ctx) {
+    boolean allMailPackagesDelivered = false;
+    int currentTime = 0;
+    while (!allMailPackagesDelivered) {
+
+      // move the train closer to their destination
+      for (Train train : ctx.getTrains()) {
+        if (!train.getCurrentLocation().equalsIgnoreCase(train.getDestination())
+            && train.getTimeToReachDestination() > 0) {
+          //still moving
+          train.setTimeToReachDestination(train.getTimeToReachDestination() - 1);
+        }else if (!train.getCurrentLocation().equalsIgnoreCase(train.getDestination())
+                && train.getTimeToReachDestination() == 1 ){
+          //reach destination
+          //pick up max parcel algorithm
+        }else {
+          //not moving
         }
       }
-      ctx.getGraph().addNode(node);
+
+      // if train reach their destination, get its package and set new destination
+      for (Train train : ctx.getTrains()) {
+        if (train.getTimeToReachDestination() == 0) {
+
+        }
+      }
+
+      // find packages in other stations that needs to be delivered
+
+      for (Station station : getStationsWithPackages(ctx)) {
+        // all packages in this station
+        List<MailPackage> mailPackagesInStation = station.getMailPackages();
+
+        // find best train to get package to send
+        int shortestDistanceForTrainToReach = Integer.MAX_VALUE;
+        Train nearestTrain = null;
+        for (Train train : ctx.getTrains()) {
+          // only get train if train is not moving
+          if (train.getCurrentLocation().equalsIgnoreCase(train.getDestination())
+              && train.getTimeToReachDestination() == 0) {
+            Graph pathForTrain =
+                Dijkstra.calculateShortestPathFromSource(
+                    ctx.getGraph(), ctx.getNodes().get(train.getCurrentLocation()));
+
+            for (Node node : pathForTrain.getNodes()) {
+              if (!train.getCurrentLocation().equalsIgnoreCase(node.getName())
+                  && node.getName().equalsIgnoreCase(station.getName())) {
+                if (node.getDistance() <= shortestDistanceForTrainToReach) {
+                  shortestDistanceForTrainToReach = node.getDistance();
+                  nearestTrain = train;
+                }
+              }
+            }
+            System.out.println(nearestTrain.getName());
+            System.out.println(shortestDistanceForTrainToReach);
+          }
+        }
+        currentTime = currentTime + shortestDistanceForTrainToReach;
+        nearestTrain.setDestination(station.getName());
+        nearestTrain.setTimeToReachDestination(shortestDistanceForTrainToReach);
+
+        // to optimise if to drop packages for other trains to pick it up if there is other train in
+        // the same platform
+        // station.getTrainsInStation().stream().map(Train::getMailPackages).collect(Collectors.toList());
+
+      }
+
+      if (hasAllMailPackagesDelivered(ctx)) {
+        allMailPackagesDelivered = true;
+      }
     }
   }
 
-  private static void generatePackagesInRespectiveStations(Context ctx) {
-    for (Station station : ctx.getStations()) {
-      station.setMailPackages(
-          ctx.getMailPackages().stream()
-              .filter(p -> p.getSource().equalsIgnoreCase(station.getName()))
-              .collect(Collectors.toList()));
-    }
+  private static void logMovement(
+      int currentTime,
+      Node node,
+      Train train,
+      List<MailPackage> mailPackageLoaded,
+      List<MailPackage> mailPackagedDropped,
+      Route route,
+      int cost) {
+    StringBuilder sb = new StringBuilder();
+    sb.append("@");
+    sb.append(currentTime);
+    sb.append(", ");
+
+    sb.append(train.getName());
+
+    System.out.println(sb.toString());
   }
+
+  private static boolean hasAllMailPackagesDelivered(Context ctx) {
+    return getStationsWithPackages(ctx).isEmpty() && getTrainsWithPackages(ctx).isEmpty();
+  }
+
+  private static List<Station> getStationsWithPackages(Context ctx) {
+    List<Station> stationsWithPackages = new ArrayList<>();
+    Map<String, Station> stations = ctx.getStations();
+    Iterator<Map.Entry<String, Station>> stationIterator = stations.entrySet().iterator();
+    while (stationIterator.hasNext()) {
+      Map.Entry<String, Station> stationEntry = stationIterator.next();
+      Station station = stationEntry.getValue();
+      for (MailPackage mp : station.getMailPackages()) {
+        if (!mp.getDestination().equalsIgnoreCase(station.getName())) {
+          stationsWithPackages.add(station);
+        }
+      }
+    }
+    return stationsWithPackages;
+  }
+
+  private static List<Train> getTrainsWithPackages(Context ctx) {
+    return ctx.getTrains().stream()
+        .filter(p -> p.getMailPackages().size() > 0)
+        .collect(Collectors.toList());
+  }
+
+  private static void loadTrain() {}
+
+  private static void unloadTrain() {}
 }
