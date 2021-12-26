@@ -12,3 +12,4 @@ Steps to run
 
 ###Credits
 Using dijkstra algorithm from: https://www.baeldung.com/java-dijkstra
+Using knapsack algorithm from: https://www.baeldung.com/java-knapsack

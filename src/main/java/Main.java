@@ -42,22 +42,20 @@ public class Main {
       // move the train closer to their destination
       for (Train train : ctx.getTrains()) {
         if (!train.getCurrentLocation().equalsIgnoreCase(train.getDestination())
-            && train.getTimeToReachDestination() > 0) {
+            && train.getTimeToReachDestination() > 1) {
           //still moving
           train.setTimeToReachDestination(train.getTimeToReachDestination() - 1);
+          //use dijsktra again
         }else if (!train.getCurrentLocation().equalsIgnoreCase(train.getDestination())
                 && train.getTimeToReachDestination() == 1 ){
-          //reach destination
+          //reached destination
+          train.setCurrentLocation(train.getDestination());
+          train.setTimeToReachDestination(0);
           //pick up max parcel algorithm
+
+          //djisktra algorithm to find fastest path to destination
         }else {
           //not moving
-        }
-      }
-
-      // if train reach their destination, get its package and set new destination
-      for (Train train : ctx.getTrains()) {
-        if (train.getTimeToReachDestination() == 0) {
-
         }
       }
 
@@ -91,9 +89,11 @@ public class Main {
             System.out.println(shortestDistanceForTrainToReach);
           }
         }
-        currentTime = currentTime + shortestDistanceForTrainToReach;
-        nearestTrain.setDestination(station.getName());
-        nearestTrain.setTimeToReachDestination(shortestDistanceForTrainToReach);
+
+        if (nearestTrain != null){
+          nearestTrain.setDestination(station.getName());
+          nearestTrain.setTimeToReachDestination(shortestDistanceForTrainToReach);
+        }
 
         // to optimise if to drop packages for other trains to pick it up if there is other train in
         // the same platform
@@ -104,6 +104,7 @@ public class Main {
       if (hasAllMailPackagesDelivered(ctx)) {
         allMailPackagesDelivered = true;
       }
+      currentTime = currentTime + 1;
     }
   }
 
