@@ -1,18 +1,28 @@
 package models;
 
-import lombok.AllArgsConstructor;
+import dijkstra.Graph;
+import dijkstra.Node;
 import lombok.Getter;
-import lombok.Setter;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 
-@AllArgsConstructor
 @Getter
 public class Context {
     List<Station> stations = new ArrayList();
     List<Route> routes = new ArrayList<>();
     List<MailPackage> mailPackages = new ArrayList<>();
     List<Train> trains = new ArrayList<>();
+    Map<String, Node> nodes = new HashMap<>();
+    Graph graph = new Graph();
+
+    public Context(List<Station> stations,List<Route> routes,List<MailPackage> mailPackages, List<Train> trains){
+        this.stations = stations;
+        this.routes = routes;
+        this.mailPackages = mailPackages;
+        this.trains = trains;
+    }
 }

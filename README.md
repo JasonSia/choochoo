@@ -10,3 +10,5 @@ Steps to run
 ###Assumptions
 * no input validation required
 
+###Credits
+Using dijkstra algorithm from: https://www.baeldung.com/java-dijkstra

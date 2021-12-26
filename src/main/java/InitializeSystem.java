@@ -1,4 +1,8 @@
-package models;
+import models.Context;
+import models.MailPackage;
+import models.Route;
+import models.Station;
+import models.Train;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -6,7 +10,6 @@ import java.util.List;
 
 public class InitializeSystem {
 
-    private static int argumentPointer = 0;
     private static final int POINTER_OFFSET = 1;
 
     private static final int STATION_DATA_NAME_INDEX = 0;
@@ -25,12 +28,14 @@ public class InitializeSystem {
     private static final int TRAIN_DATA_STARTING_LOCATION_INDEX = 1;
     private static final int TRAIN_DATA_CAPACITY_INDEX = 2;
 
-    public static Context initalizeTrainSystem(String args[]) {
+    private static int argumentPointer = 0;
+
+    public static Context readInput(String args[]) {
 
         int numberOfStations = Integer.parseInt(args[argumentPointer]);
         int nextArgumentPointer = argumentPointer + numberOfStations + POINTER_OFFSET;
         // initializeStations
-        List<Station > stations = initializeStations(Arrays.copyOfRange(args, argumentPointer + POINTER_OFFSET, nextArgumentPointer));
+        List<Station> stations = initializeStations(Arrays.copyOfRange(args, argumentPointer + POINTER_OFFSET, nextArgumentPointer));
 
         argumentPointer = nextArgumentPointer;
         int numberOfRoutes = Integer.parseInt(args[argumentPointer]);
