@@ -8,9 +8,11 @@ import models.Station;
 import models.Train;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class Main {
@@ -43,23 +45,31 @@ public class Main {
       for (Train train : ctx.getTrains()) {
         if (!train.getCurrentLocation().equalsIgnoreCase(train.getDestination())
             && train.getTimeToReachDestination() > 1) {
-          //still moving
+          // still moving
           train.setTimeToReachDestination(train.getTimeToReachDestination() - 1);
-          //use dijsktra again
-          //print log
-        }else if (!train.getCurrentLocation().equalsIgnoreCase(train.getDestination())
-                && train.getTimeToReachDestination() == 1 ){
-          //reached destination
+          // use dijsktra again
+          // print log
+        } else if (!train.getCurrentLocation().equalsIgnoreCase(train.getDestination())
+            && train.getTimeToReachDestination() == 1) {
+          // reached destination
           train.setCurrentLocation(train.getDestination());
           train.setTimeToReachDestination(0);
           train.setDestination(null);
-          //get first x packages till full first
+          // get first x packages till full first
 
-          //todo pick up max parcel algorithm
-          //todo djisktra algorithm to find fastest path to destination
-          //print log
-        }else {
-          //not moving
+          Station currentStation = ctx.getStations().get(train.getCurrentLocation());
+          List<MailPackage> mailPackageToDeliver =
+              ctx.getStations().get(train.getCurrentLocation()).getMailPackages();
+          String firstDestination =
+              mailPackageToDeliver.stream().findFirst().get().getDestination();
+          unloadTrain(firstDestination, train, currentStation);
+          loadTrain(firstDestination, train, currentStation);
+
+          // todo pick up max parcel algorithm
+          // todo djisktra algorithm to find fastest path to destination
+          // print log
+        } else {
+          // not moving
         }
       }
 
@@ -72,7 +82,7 @@ public class Main {
         // find best train to get package to send
         int shortestDistanceForTrainToReach = Integer.MAX_VALUE;
         Train nearestTrain = null;
-        //todo if multiple train of same destination need to compare capacity
+        // todo if multiple train of same destination need to compare capacity
         for (Train train : ctx.getTrains()) {
           // only get train if train is not moving
           if (train.getDestination() == null) {
@@ -94,7 +104,7 @@ public class Main {
           }
         }
 
-        if (nearestTrain != null){
+        if (nearestTrain != null) {
           nearestTrain.setDestination(station.getName());
           nearestTrain.setTimeToReachDestination(shortestDistanceForTrainToReach);
         }
@@ -157,13 +167,31 @@ public class Main {
   }
 
   private static void loadTrain(String destination, Train train, Station station) {
-    List<MailPackage> mailPackage = station.getMailPackages().stream().filter(p -> p.getDestination().equalsIgnoreCase(destination)).collect(Collectors.toList());
-    train.getMailPackages().addAll(mailPackage);
+    List<MailPackage> mailPackage =
+        station.getMailPackages().stream()
+            .filter(p -> p.getDestination().equalsIgnoreCase(destination))
+            .sorted(Comparator.comparing(MailPackage::getWeight))
+            .collect(Collectors.toList());
+
+    int currentLoadOnTrain = train.getMailPackages().stream().mapToInt(MailPackage::getWeight).sum();
+
+    while (currentLoadOnTrain < train.getCapacity()) {
+      Optional<MailPackage> mailPackageToAdd = mailPackage.stream().findFirst();
+      if (mailPackageToAdd.get().getWeight() + currentLoadOnTrain <= train.getCapacity()){
+        train.getMailPackages().add(mailPackageToAdd.get());
+        station.getMailPackages().remove(mailPackageToAdd.get());
+      }
+      currentLoadOnTrain = train.getMailPackages().stream().mapToInt(MailPackage::getWeight).sum();
+    }
+
     station.getMailPackages().removeAll(mailPackage);
   }
 
   private static void unloadTrain(String destination, Train train, Station station) {
-    List<MailPackage> mailPackage = train.getMailPackages().stream().filter(p -> p.getDestination().equalsIgnoreCase(destination)).collect(Collectors.toList());
+    List<MailPackage> mailPackage =
+        train.getMailPackages().stream()
+            .filter(p -> p.getDestination().equalsIgnoreCase(destination))
+            .collect(Collectors.toList());
     station.getMailPackages().addAll(mailPackage);
     train.getMailPackages().removeAll(mailPackage);
   }
