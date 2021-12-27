@@ -8,6 +8,7 @@ import models.Station;
 import models.Train;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
@@ -82,6 +83,7 @@ public class Main {
         // find best train to get package to send
         int shortestDistanceForTrainToReach = Integer.MAX_VALUE;
         Train nearestTrain = null;
+        List<Node> pathToTake = Collections.emptyList();
         // todo if multiple train of same destination need to compare capacity
         for (Train train : ctx.getTrains()) {
           // only get train if train is not moving
@@ -96,6 +98,8 @@ public class Main {
                 if (node.getDistance() <= shortestDistanceForTrainToReach) {
                   shortestDistanceForTrainToReach = node.getDistance();
                   nearestTrain = train;
+                  Optional<Node> destinationNode = pathForTrain.getNodes().stream().filter(p -> p.getName().equalsIgnoreCase(station.getName())).findFirst();
+                  pathToTake = destinationNode.get().getShortestPath();
                 }
               }
             }
@@ -107,6 +111,7 @@ public class Main {
         if (nearestTrain != null) {
           nearestTrain.setDestination(station.getName());
           nearestTrain.setTimeToReachDestination(shortestDistanceForTrainToReach);
+          nearestTrain.setRouteAssigned(pathToTake);
         }
 
         // to optimise if to drop packages for other trains to pick it up if there is other train in
@@ -194,5 +199,9 @@ public class Main {
             .collect(Collectors.toList());
     station.getMailPackages().addAll(mailPackage);
     train.getMailPackages().removeAll(mailPackage);
+  }
+
+  private static void determineRouteFromLocation(Context ctx, String currentLocation, String destination){
+    //loop through routes where both current and destination exist, return ctx
   }
 }
