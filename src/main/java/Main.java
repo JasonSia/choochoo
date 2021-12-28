@@ -47,9 +47,24 @@ public class Main {
         if (!train.getCurrentLocation().equalsIgnoreCase(train.getDestination())
             && train.getTimeToReachDestination() > 1) {
           // still moving
-          //todo convert to list path and deduct from path to determine pathing
-          train.setTimeToReachDestination(train.getTimeToReachDestination() - 1);
-          // use dijsktra again
+          // todo convert to list path and deduct from path to determine pathing
+          for (int i = 0; i < train.getRouteAssigned().size(); i++) {
+            Node n = train.getRouteAssigned().get(i);
+            if (n.getDistance() > 1) {
+              n.setDistance(n.getDistance() - 1);
+              if (i == 0) {
+                String from = n.getName();
+                String to = train.getRouteAssigned().get(i + 1).getName();
+                String routeName = determineRouteFromLocation(ctx, from, to);
+              } else {
+                String from = train.getRouteAssigned().get(i - 1).getName();
+                String to = n.getName();
+                String routeName = determineRouteFromLocation(ctx, from, to);
+              }
+              break;
+            }
+          }
+
           // print log
         } else if (!train.getCurrentLocation().equalsIgnoreCase(train.getDestination())
             && train.getTimeToReachDestination() == 1) {
@@ -67,18 +82,21 @@ public class Main {
           unloadTrain(firstDestination, train, currentStation);
           loadTrain(firstDestination, train, currentStation);
 
-
           // todo djisktra algorithm to find fastest path to destination
           Graph map1 = InitializeSystem.getMapForRouting(ctx);
           Graph pathAnalysisForTrain =
-                  Dijkstra.calculateShortestPathFromSource(
-                          map1, map1.getNodesByName(currentStation.getName()));
-          Optional<Node> pathForTrain = pathAnalysisForTrain.getNodes().stream().filter(p -> p.getName().equalsIgnoreCase(firstDestination)).findFirst();
-          if (pathForTrain.isEmpty()){
+              Dijkstra.calculateShortestPathFromSource(
+                  map1, map1.getNodesByName(currentStation.getName()));
+          Optional<Node> pathForTrain =
+              pathAnalysisForTrain.getNodes().stream()
+                  .filter(p -> p.getName().equalsIgnoreCase(firstDestination))
+                  .findFirst();
+          if (pathForTrain.isEmpty()) {
             System.out.println("no destination found in map");
-          }else{
+          } else {
             List<Node> path = pathForTrain.get().getShortestPath();
-            //assign path to train
+            train.setRouteAssigned(path);
+            // assign path to train
           }
           // print log
         } else {
@@ -105,7 +123,7 @@ public class Main {
             Graph map1 = InitializeSystem.getMapForRouting(ctx);
             Graph pathForTrain =
                 Dijkstra.calculateShortestPathFromSource(
-                        map1, map1.getNodesByName(train.getCurrentLocation()));
+                    map1, map1.getNodesByName(train.getCurrentLocation()));
 
             for (Node node : pathForTrain.getNodes()) {
               if (!train.getCurrentLocation().equalsIgnoreCase(node.getName())
@@ -113,7 +131,10 @@ public class Main {
                 if (node.getDistance() <= shortestDistanceForTrainToReach) {
                   shortestDistanceForTrainToReach = node.getDistance();
                   nearestTrain = train;
-                  Optional<Node> destinationNode = pathForTrain.getNodes().stream().filter(p -> p.getName().equalsIgnoreCase(station.getName())).findFirst();
+                  Optional<Node> destinationNode =
+                      pathForTrain.getNodes().stream()
+                          .filter(p -> p.getName().equalsIgnoreCase(station.getName()))
+                          .findFirst();
                   pathToTake = destinationNode.get().getShortestPath();
                 }
               }
@@ -187,18 +208,19 @@ public class Main {
   }
 
   private static void loadTrain(String destination, Train train, Station station) {
-    //todo implement knapsack algo
+    // todo implement knapsack algo
     List<MailPackage> mailPackage =
         station.getMailPackages().stream()
             .filter(p -> p.getDestination().equalsIgnoreCase(destination))
             .sorted(Comparator.comparing(MailPackage::getWeight))
             .collect(Collectors.toList());
 
-    int currentLoadOnTrain = train.getMailPackages().stream().mapToInt(MailPackage::getWeight).sum();
+    int currentLoadOnTrain =
+        train.getMailPackages().stream().mapToInt(MailPackage::getWeight).sum();
 
     while (currentLoadOnTrain < train.getCapacity()) {
       Optional<MailPackage> mailPackageToAdd = mailPackage.stream().findFirst();
-      if (mailPackageToAdd.get().getWeight() + currentLoadOnTrain <= train.getCapacity()){
+      if (mailPackageToAdd.get().getWeight() + currentLoadOnTrain <= train.getCapacity()) {
         train.getMailPackages().add(mailPackageToAdd.get());
         station.getMailPackages().remove(mailPackageToAdd.get());
       }
@@ -217,7 +239,20 @@ public class Main {
     train.getMailPackages().removeAll(mailPackage);
   }
 
-  private static void determineRouteFromLocation(Context ctx, String currentLocation, String destination){
-    //loop through routes where both current and destination exist, return ctx
+  private static String determineRouteFromLocation(
+      Context ctx, String currentLocation, String destination) {
+    // loop through routes where both current and destination exist, return ctx
+
+    for (Route route : ctx.getRoutes()) {
+      if ((route.getStationA().equalsIgnoreCase(currentLocation)
+          || route.getStationB().equalsIgnoreCase(destination)
+              && ((route.getStationA().equalsIgnoreCase(destination))
+                  || route.getStationB().equalsIgnoreCase(currentLocation)))) {
+        return route.getRouteName();
+      } else {
+        return "invalid route";
+      }
+    }
+    return "invalid route";
   }
 }
