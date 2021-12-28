@@ -1,7 +1,5 @@
 package models;
 
-import dijkstra.Graph;
-import dijkstra.Node;
 import lombok.Getter;
 
 import java.util.ArrayList;
@@ -16,8 +14,6 @@ public class Context {
     List<Route> routes = new ArrayList<>();
     List<MailPackage> mailPackages = new ArrayList<>();
     List<Train> trains = new ArrayList<>();
-    Map<String, Node> nodes = new HashMap<>();
-    Graph graph = new Graph();
 
     public Context(Map<String, Station> stations,List<Route> routes,List<MailPackage> mailPackages, List<Train> trains){
         this.stations = stations;

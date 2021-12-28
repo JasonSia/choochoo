@@ -24,7 +24,7 @@ public class Main {
 
     InitializeSystem.generatePackagesInRespectiveStations(ctx);
     InitializeSystem.placeTrainInStations(ctx);
-    InitializeSystem.generateRoutingMap(ctx);
+    InitializeSystem.getMapForRouting(ctx);
 
     //    // to get shortest path from A to anywhere.
     //    Graph shortestPathGraph =
@@ -88,9 +88,13 @@ public class Main {
         for (Train train : ctx.getTrains()) {
           // only get train if train is not moving
           if (train.getDestination() == null) {
+
+            Graph map1 = InitializeSystem.getMapForRouting(ctx);
+
             Graph pathForTrain =
                 Dijkstra.calculateShortestPathFromSource(
-                    ctx.getGraph(), ctx.getNodes().get(train.getCurrentLocation()));
+                        map1, map1.getNodesByName(train.getCurrentLocation()));
+
 
             for (Node node : pathForTrain.getNodes()) {
               if (!train.getCurrentLocation().equalsIgnoreCase(node.getName())
