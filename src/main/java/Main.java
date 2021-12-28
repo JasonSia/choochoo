@@ -47,6 +47,7 @@ public class Main {
         if (!train.getCurrentLocation().equalsIgnoreCase(train.getDestination())
             && train.getTimeToReachDestination() > 1) {
           // still moving
+          //todo convert to list path and deduct from path to determine pathing
           train.setTimeToReachDestination(train.getTimeToReachDestination() - 1);
           // use dijsktra again
           // print log
@@ -66,8 +67,19 @@ public class Main {
           unloadTrain(firstDestination, train, currentStation);
           loadTrain(firstDestination, train, currentStation);
 
-          // todo pick up max parcel algorithm
+
           // todo djisktra algorithm to find fastest path to destination
+          Graph map1 = InitializeSystem.getMapForRouting(ctx);
+          Graph pathAnalysisForTrain =
+                  Dijkstra.calculateShortestPathFromSource(
+                          map1, map1.getNodesByName(currentStation.getName()));
+          Optional<Node> pathForTrain = pathAnalysisForTrain.getNodes().stream().filter(p -> p.getName().equalsIgnoreCase(firstDestination)).findFirst();
+          if (pathForTrain.isEmpty()){
+            System.out.println("no destination found in map");
+          }else{
+            List<Node> path = pathForTrain.get().getShortestPath();
+            //assign path to train
+          }
           // print log
         } else {
           // not moving
@@ -84,17 +96,16 @@ public class Main {
         int shortestDistanceForTrainToReach = Integer.MAX_VALUE;
         Train nearestTrain = null;
         List<Node> pathToTake = Collections.emptyList();
-        // todo if multiple train of same destination need to compare capacity
+
+        // todo if multiple train of same destination need to compare capacity (another knapsack)
         for (Train train : ctx.getTrains()) {
           // only get train if train is not moving
           if (train.getDestination() == null) {
 
             Graph map1 = InitializeSystem.getMapForRouting(ctx);
-
             Graph pathForTrain =
                 Dijkstra.calculateShortestPathFromSource(
                         map1, map1.getNodesByName(train.getCurrentLocation()));
-
 
             for (Node node : pathForTrain.getNodes()) {
               if (!train.getCurrentLocation().equalsIgnoreCase(node.getName())
@@ -176,6 +187,7 @@ public class Main {
   }
 
   private static void loadTrain(String destination, Train train, Station station) {
+    //todo implement knapsack algo
     List<MailPackage> mailPackage =
         station.getMailPackages().stream()
             .filter(p -> p.getDestination().equalsIgnoreCase(destination))
