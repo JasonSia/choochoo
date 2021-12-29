@@ -26,15 +26,7 @@ public class Main {
     InitializeSystem.placeTrainInStations(ctx);
     InitializeSystem.getMapForRouting(ctx);
 
-    //    // to get shortest path from A to anywhere.
-    //    Graph shortestPathGraph =
-    //            Dijkstra.calculateShortestPathFromSource(ctx.getGraph(), ctx.getNodes().get("A"));
-
     deliverPackages(ctx);
-    // loop through stations
-    // find closest trains to stations to start transporting with greedy algorithm
-    // station controlling trains to come
-    // similar to grab on demand service
   }
 
   private static void deliverPackages(Context ctx) {
@@ -44,36 +36,33 @@ public class Main {
 
       // move the train closer to their destination
       for (Train train : ctx.getTrains()) {
-        if (!train.getCurrentLocation().equalsIgnoreCase(train.getDestination())
-            && train.getTimeToReachDestination() > 1) {
-          // still moving
-          // todo convert to list path and deduct from path to determine pathing
-          for (int i = 0; i < train.getRouteAssigned().size(); i++) {
-            Node n = train.getRouteAssigned().get(i);
-            if (n.getDistance() > 1) {
-              n.setDistance(n.getDistance() - 1);
-              if (i == 0) {
-                String from = n.getName();
-                String to = train.getRouteAssigned().get(i + 1).getName();
-                String routeName = determineRouteFromLocation(ctx, from, to);
-              } else {
-                String from = train.getRouteAssigned().get(i - 1).getName();
-                String to = n.getName();
-                String routeName = determineRouteFromLocation(ctx, from, to);
-              }
-              break;
-            }
-          }
+        if (train.getDestination() != null
+            && !train.getCurrentLocation().equalsIgnoreCase(train.getDestination())
+            && getTimeToReachDestination(train) > 1) {
 
-          // print log
-        } else if (!train.getCurrentLocation().equalsIgnoreCase(train.getDestination())
-            && train.getTimeToReachDestination() == 1) {
+          String route =
+              determineRouteFromLocation(
+                  ctx, train.getCurrentLocation(), getTrainNextDestination(train));
+          logMovement(
+              currentTime,
+              train,
+              Collections.emptyList(),
+              Collections.emptyList(),
+              getTrainPreviousLocation(train),
+              getTrainNextDestination(train),
+              route,
+              getDistanceOfRoute(ctx, route));
+
+          moveTrainByOneUnit(train);
+
+        } else if (train.getDestination() != null
+            && !train.getCurrentLocation().equalsIgnoreCase(train.getDestination())
+            && getTimeToReachDestination(train) == 1) {
           // reached destination
           train.setCurrentLocation(train.getDestination());
-          train.setTimeToReachDestination(0);
-          train.setDestination(null);
-          // get first x packages till full first
+          train.setRouteAssigned(Collections.emptyList());
 
+          // get first x packages till full first
           Station currentStation = ctx.getStations().get(train.getCurrentLocation());
           List<MailPackage> mailPackageToDeliver =
               ctx.getStations().get(train.getCurrentLocation()).getMailPackages();
@@ -83,10 +72,10 @@ public class Main {
           loadTrain(firstDestination, train, currentStation);
 
           // todo djisktra algorithm to find fastest path to destination
-          Graph map1 = InitializeSystem.getMapForRouting(ctx);
+          Graph map = InitializeSystem.getMapForRouting(ctx);
           Graph pathAnalysisForTrain =
               Dijkstra.calculateShortestPathFromSource(
-                  map1, map1.getNodesByName(currentStation.getName()));
+                  map, map.getNodesByName(currentStation.getName()));
           Optional<Node> pathForTrain =
               pathAnalysisForTrain.getNodes().stream()
                   .filter(p -> p.getName().equalsIgnoreCase(firstDestination))
@@ -96,9 +85,10 @@ public class Main {
           } else {
             List<Node> path = pathForTrain.get().getShortestPath();
             train.setRouteAssigned(path);
-            // assign path to train
+            train.setDestination(firstDestination);
           }
           // print log
+          moveTrainByOneUnit(train);
         } else {
           // not moving
         }
@@ -116,10 +106,10 @@ public class Main {
         List<Node> pathToTake = Collections.emptyList();
 
         // todo if multiple train of same destination need to compare capacity (another knapsack)
+        // todo bug: multiple train might be called if one is already otw
         for (Train train : ctx.getTrains()) {
           // only get train if train is not moving
-          if (train.getDestination() == null) {
-
+          if (train.getDestination().equalsIgnoreCase(train.getCurrentLocation())) {
             Graph map1 = InitializeSystem.getMapForRouting(ctx);
             Graph pathForTrain =
                 Dijkstra.calculateShortestPathFromSource(
@@ -139,15 +129,12 @@ public class Main {
                 }
               }
             }
-            System.out.println(nearestTrain.getName());
-            System.out.println(shortestDistanceForTrainToReach);
           }
         }
 
         if (nearestTrain != null) {
-          nearestTrain.setDestination(station.getName());
-          nearestTrain.setTimeToReachDestination(shortestDistanceForTrainToReach);
           nearestTrain.setRouteAssigned(pathToTake);
+          nearestTrain.setDestination(station.getName());
         }
 
         // to optimise if to drop packages for other trains to pick it up if there is other train in
@@ -165,18 +152,33 @@ public class Main {
 
   private static void logMovement(
       int currentTime,
-      Node node,
       Train train,
       List<MailPackage> mailPackageLoaded,
       List<MailPackage> mailPackagedDropped,
-      Route route,
-      int cost) {
+      String from,
+      String to,
+      String route,
+      int timeLeft) {
     StringBuilder sb = new StringBuilder();
     sb.append("@");
-    sb.append(currentTime);
+    sb.append(currentTime-1);
     sb.append(", ");
-
+    sb.append("n ");
+    sb.append(", q = ");
     sb.append(train.getName());
+    sb.append(", load= ");
+    sb.append(mailPackageLoaded.toString());
+    sb.append(", drop= ");
+    sb.append(mailPackagedDropped.toString());
+    sb.append(", ");
+    sb.append("moving ");
+    sb.append(from);
+    sb.append("->");
+    sb.append(to);
+    sb.append(":");
+    sb.append(route);
+    sb.append(" arr ");
+    sb.append(timeLeft);
 
     System.out.println(sb.toString());
   }
@@ -219,6 +221,7 @@ public class Main {
         train.getMailPackages().stream().mapToInt(MailPackage::getWeight).sum();
 
     while (currentLoadOnTrain < train.getCapacity()) {
+      //todo for loop the package to add instead of getting first
       Optional<MailPackage> mailPackageToAdd = mailPackage.stream().findFirst();
       if (mailPackageToAdd.get().getWeight() + currentLoadOnTrain <= train.getCapacity()) {
         train.getMailPackages().add(mailPackageToAdd.get());
@@ -241,18 +244,61 @@ public class Main {
 
   private static String determineRouteFromLocation(
       Context ctx, String currentLocation, String destination) {
-    // loop through routes where both current and destination exist, return ctx
-
     for (Route route : ctx.getRoutes()) {
       if ((route.getStationA().equalsIgnoreCase(currentLocation)
           || route.getStationB().equalsIgnoreCase(destination)
               && ((route.getStationA().equalsIgnoreCase(destination))
                   || route.getStationB().equalsIgnoreCase(currentLocation)))) {
         return route.getRouteName();
-      } else {
-        return "invalid route";
       }
     }
     return "invalid route";
+  }
+
+  private static int getTimeToReachDestination(Train train) {
+    int totalDistanceLeft = 0;
+    for (Node node : train.getRouteAssigned()) {
+      totalDistanceLeft = totalDistanceLeft + node.getDistance();
+    }
+    return totalDistanceLeft;
+  }
+
+  private static void moveTrainByOneUnit(Train train) {
+    for (Node node : train.getRouteAssigned()) {
+      if (node.getDistance() > 0) {
+        node.setDistance(node.getDistance() - 1);
+        if (node.getDistance() == 0) {
+          train.setCurrentLocation(getTrainPreviousLocation(train));
+        }
+        break;
+      }
+    }
+  }
+
+  private static String getTrainNextDestination(Train train) {
+    for (Node node : train.getRouteAssigned()) {
+      if (node.getDistance() > 0) {
+        return node.getName();
+      }
+    }
+    return train.getCurrentLocation();
+  }
+
+  private static String getTrainPreviousLocation(Train train) {
+    for (int i = 0; i < train.getRouteAssigned().size(); i++) {
+      if (train.getRouteAssigned().get(i).getDistance() > 0) {
+        return train.getRouteAssigned().get(i - 1).getName();
+      }
+    }
+    return train.getCurrentLocation();
+  }
+
+  private static int getDistanceOfRoute(Context ctx, String routeName){
+    for (Route route: ctx.getRoutes()){
+      if (route.getRouteName().equalsIgnoreCase(routeName)){
+        return route.getTime();
+      }
+    }
+    return 0;
   }
 }

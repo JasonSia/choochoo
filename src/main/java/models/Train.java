@@ -21,7 +21,6 @@ public class Train {
     private String startingPoint;
     private String currentLocation;
     private String destination;
-    private int timeToReachDestination = 0;
     private List<Node> routeAssigned = Collections.emptyList();
     private List<MailPackage> mailPackages = new ArrayList<>();
 
@@ -30,5 +29,6 @@ public class Train {
         this.capacity = capacity;
         this.startingPoint = startingPoint;
         this.currentLocation = startingPoint;
+        this.destination = startingPoint;
     }
 }
