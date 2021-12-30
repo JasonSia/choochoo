@@ -21,4 +21,26 @@ public class Context {
         this.mailPackages = mailPackages;
         this.trains = trains;
     }
+
+    public int getDistanceOfRoute(String routeName){
+        for (Route route: getRoutes()){
+            if (route.getRouteName().equalsIgnoreCase(routeName)){
+                return route.getTime();
+            }
+        }
+        return 0;
+    }
+
+    public String determineRouteFromLocation(
+            String currentLocation, String destination) {
+        for (Route route : routes) {
+            if ((route.getStationA().equalsIgnoreCase(currentLocation)
+                    || route.getStationB().equalsIgnoreCase(destination)
+                    && ((route.getStationA().equalsIgnoreCase(destination))
+                    || route.getStationB().equalsIgnoreCase(currentLocation)))) {
+                return route.getRouteName();
+            }
+        }
+        return "invalid route";
+    }
 }

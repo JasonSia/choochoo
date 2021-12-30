@@ -31,4 +31,42 @@ public class Train {
         this.currentLocation = startingPoint;
         this.destination = startingPoint;
     }
+
+    public String getTrainNextDestination() {
+        for (Node node : routeAssigned) {
+            if (node.getDistance() > 0) {
+                return node.getName();
+            }
+        }
+        return currentLocation;
+    }
+
+    public String getTrainPreviousLocation() {
+        for (int i = 0; i < routeAssigned.size(); i++) {
+            if (routeAssigned.get(i).getDistance() > 0) {
+                return routeAssigned.get(i - 1).getName();
+            }
+        }
+        return currentLocation;
+    }
+
+    public void moveTrainByOneUnit() {
+        for (Node node : routeAssigned) {
+            if (node.getDistance() > 0) {
+                node.setDistance(node.getDistance() - 1);
+                if (node.getDistance() == 0) {
+                    setCurrentLocation(getTrainPreviousLocation());
+                }
+                break;
+            }
+        }
+    }
+
+    public int getTimeToReachDestination() {
+        int totalDistanceLeft = 0;
+        for (Node node : routeAssigned) {
+            totalDistanceLeft = totalDistanceLeft + node.getDistance();
+        }
+        return totalDistanceLeft;
+    }
 }

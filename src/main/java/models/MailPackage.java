@@ -11,4 +11,8 @@ public class MailPackage {
     private String source;
     private String destination;
     private int weight;
+
+    public String toString(){
+        return name;
+    }
 }
