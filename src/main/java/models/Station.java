@@ -20,4 +20,24 @@ public class Station {
     public Station (String name){
         this.name = name;
     }
+
+    public List<MailPackage> getUndeliveredPackage(){
+        List<MailPackage> undeliveredPackage = new ArrayList<>();
+        for (MailPackage mp: mailPackages){
+            if(mp.getStatus() == MailPackage.TO_DELIVER){
+                undeliveredPackage.add(mp);
+            }
+        }
+        return undeliveredPackage;
+    }
+
+    public boolean isAllPackageInStationDelivered(){
+        for (MailPackage mp: mailPackages){
+            if(mp.getStatus() != MailPackage.DELIVERED){
+              return false;
+            }
+        }
+        return true;
+    }
+
 }

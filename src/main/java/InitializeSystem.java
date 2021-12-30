@@ -65,7 +65,6 @@ public class InitializeSystem {
         Context ctx = new Context(stations, routes, mailPackages, trains);
         System.out.println("finish initializing system");
         return ctx;
-
     }
 
     protected static void generatePackagesInRespectiveStations(Context ctx) {
@@ -152,7 +151,8 @@ public class InitializeSystem {
                             packageInputArray[PACKAGE_DATA_NAME_INDEX],
                             packageInputArray[PACKAGE_DATA_SOURCE_INDEX],
                             packageInputArray[PACKAGE_DATA_DESTINATION_INDEX],
-                            Integer.parseInt(packageInputArray[PACKAGE_DATA_WEIGHT_INDEX]));
+                            Integer.parseInt(packageInputArray[PACKAGE_DATA_WEIGHT_INDEX])
+                            ,MailPackage.TO_DELIVER);
             mailPackageList.add(mailPackage);
         }
         return mailPackageList;

@@ -20,7 +20,7 @@ public class Train {
     @Setter(AccessLevel.NONE)
     private String startingPoint;
     private String currentLocation;
-    private String destination;
+    private String finalDestination;
     private List<Node> routeAssigned = Collections.emptyList();
     private List<MailPackage> mailPackages = new ArrayList<>();
 
@@ -29,7 +29,7 @@ public class Train {
         this.capacity = capacity;
         this.startingPoint = startingPoint;
         this.currentLocation = startingPoint;
-        this.destination = startingPoint;
+        this.finalDestination = startingPoint;
     }
 
     public String getTrainNextDestination() {
@@ -41,9 +41,10 @@ public class Train {
         return currentLocation;
     }
 
+    //todo check implementation
     public String getTrainPreviousLocation() {
         for (int i = 0; i < routeAssigned.size(); i++) {
-            if (routeAssigned.get(i).getDistance() > 0) {
+            if (routeAssigned.get(i).getDistance() > 1) {
                 return routeAssigned.get(i - 1).getName();
             }
         }
