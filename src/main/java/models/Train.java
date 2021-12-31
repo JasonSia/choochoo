@@ -1,6 +1,5 @@
 package models;
 
-import dijkstra.Node;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
@@ -8,66 +7,68 @@ import lombok.Setter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 @Setter
 @Getter
 public class Train {
 
-    @Setter(AccessLevel.NONE)
-    private String name;
-    @Setter(AccessLevel.NONE)
-    private int capacity;
-    @Setter(AccessLevel.NONE)
-    private String startingPoint;
-    private String currentLocation;
-    private String finalDestination;
-    private List<Node> routeAssigned = Collections.emptyList();
-    private List<MailPackage> mailPackages = new ArrayList<>();
+  @Setter(AccessLevel.NONE)
+  private String name;
 
-    public Train(String name, int capacity, String startingPoint){
-        this.name = name;
-        this.capacity = capacity;
-        this.startingPoint = startingPoint;
-        this.currentLocation = startingPoint;
-        this.finalDestination = startingPoint;
-    }
+  @Setter(AccessLevel.NONE)
+  private int capacity;
 
-    public String getTrainNextDestination() {
-        for (Node node : routeAssigned) {
-            if (node.getDistance() > 0) {
-                return node.getName();
-            }
-        }
-        return currentLocation;
-    }
+  @Setter(AccessLevel.NONE)
+  private String startingPoint;
 
-    //todo check implementation
-    public String getTrainPreviousLocation() {
-        for (int i = 0; i < routeAssigned.size(); i++) {
-            if (routeAssigned.get(i).getDistance() > 1) {
-                return routeAssigned.get(i - 1).getName();
-            }
-        }
-        return currentLocation;
-    }
+  private String currentLocation;
+  private List<Route> routeAssigned = Collections.emptyList();
+  private List<MailPackage> mailPackages = new ArrayList<>();
 
-    public void moveTrainByOneUnit() {
-        for (Node node : routeAssigned) {
-            if (node.getDistance() > 0) {
-                node.setDistance(node.getDistance() - 1);
-                if (node.getDistance() == 0) {
-                    setCurrentLocation(getTrainPreviousLocation());
-                }
-                break;
-            }
-        }
-    }
+  public Train(String name, int capacity, String startingPoint) {
+    this.name = name;
+    this.capacity = capacity;
+    this.startingPoint = startingPoint;
+    this.currentLocation = startingPoint;
+  }
 
-    public int getTimeToReachDestination() {
-        int totalDistanceLeft = 0;
-        for (Node node : routeAssigned) {
-            totalDistanceLeft = totalDistanceLeft + node.getDistance();
-        }
-        return totalDistanceLeft;
+  public int getTimeToReachDestination() {
+    int totalTime = 0;
+    for (Route route : routeAssigned) {
+      totalTime = totalTime + route.getTime();
     }
+    return totalTime;
+  }
+
+  public void moveTrainByOneUnitTime() {
+    for (Route route : routeAssigned) {
+      if (route.getTime() > 0) {
+        currentLocation = route.getStationA();
+        route.setTime(route.getTime() - 1);
+        break;
+      }
+    }
+  }
+
+  public Optional<Route> getCurrentRoute() {
+    for (Route route : routeAssigned) {
+      if (route.getTime() > 0) {
+        return Optional.of(route);
+      }
+    }
+    return Optional.empty();
+  }
+
+
+
+      public String getNextDestination() {
+          for (Route route : routeAssigned) {
+              if (route.getTime() > 0) {
+                  return route.getStationB();
+              }
+          }
+          return null;
+      }
+
 }
