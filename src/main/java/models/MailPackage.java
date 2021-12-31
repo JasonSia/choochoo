@@ -17,7 +17,7 @@ public class MailPackage {
   private String source;
   private String destination;
   private int weight;
-  private int status = TO_DELIVER;
+  private int status;
 
   public String toString() {
     return name;

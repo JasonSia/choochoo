@@ -63,7 +63,6 @@ public class InitializeSystem {
         // int numberOfTrains = Integer.parseInt(args[argumentPointer]);
         List<Train> trains = initalizeTrains(Arrays.copyOfRange(args, argumentPointer + POINTER_OFFSET, args.length));
         Context ctx = new Context(stations, routes, mailPackages, trains);
-        System.out.println("finish initializing system");
         return ctx;
     }
 

@@ -6,6 +6,7 @@ import lombok.Setter;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Setter
 @Getter
@@ -21,23 +22,10 @@ public class Station {
         this.name = name;
     }
 
-    public List<MailPackage> getUndeliveredPackage(){
-        List<MailPackage> undeliveredPackage = new ArrayList<>();
-        for (MailPackage mp: mailPackages){
-            if(mp.getStatus() == MailPackage.TO_DELIVER){
-                undeliveredPackage.add(mp);
-            }
-        }
-        return undeliveredPackage;
+
+    public void removePackage(String packageName){
+        this.mailPackages = mailPackages.stream().filter(p -> !p.getName().equalsIgnoreCase(packageName)).collect(Collectors.toList());
     }
 
-    public boolean isAllPackageInStationDelivered(){
-        for (MailPackage mp: mailPackages){
-            if(mp.getStatus() != MailPackage.DELIVERED){
-              return false;
-            }
-        }
-        return true;
-    }
 
 }

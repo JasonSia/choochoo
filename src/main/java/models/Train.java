@@ -47,6 +47,8 @@ public class Train {
         currentLocation = route.getStationA();
         route.setTime(route.getTime() - 1);
         break;
+      } else {
+        currentLocation = route.getStationB();
       }
     }
   }
@@ -59,16 +61,5 @@ public class Train {
     }
     return Optional.empty();
   }
-
-
-
-      public String getNextDestination() {
-          for (Route route : routeAssigned) {
-              if (route.getTime() > 0) {
-                  return route.getStationB();
-              }
-          }
-          return null;
-      }
 
 }

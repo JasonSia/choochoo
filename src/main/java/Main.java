@@ -6,6 +6,7 @@ import models.MailPackage;
 import models.Route;
 import models.Train;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -16,7 +17,6 @@ public class Main {
   private static int currentTime = 0;
 
   public static void main(String args[]) {
-    System.out.println("initializing choo choo");
     Context ctx = InitializeSystem.readInput(args);
 
     InitializeSystem.generatePackagesInRespectiveStations(ctx);
@@ -27,39 +27,79 @@ public class Main {
 
   private static void deliverPackages(Context ctx) {
     int currentTime = 0;
-    for (MailPackage mailPackage : ctx.getAllUndeliveredMailPackages()) {
-      Train firstTrainThatCanCarryPackage =
+    while (ctx.getAllUndeliveredMailPackages().stream().findFirst().isPresent()) {
+      MailPackage mailPackage = ctx.getAllUndeliveredMailPackages().stream().findFirst().get();
+      Optional<Train> firstTrainThatCanCarryPackageFromNonMovingTrain =
           ctx.getNonMovingTrains().stream()
               .filter(p -> p.getCapacity() >= mailPackage.getWeight())
-              .findFirst()
-              .get();
+              .findFirst();
 
-      Graph map = InitializeSystem.getMapForRouting(ctx);
-      Graph pathForTrainToAllStation =
-          Dijkstra.calculateShortestPathFromSource(
-              map, map.getNodesByName(firstTrainThatCanCarryPackage.getCurrentLocation()));
+      if(firstTrainThatCanCarryPackageFromNonMovingTrain.isPresent()){
+        Train firstTrainThatCanCarryPackage = firstTrainThatCanCarryPackageFromNonMovingTrain.get();
+        Graph map = InitializeSystem.getMapForRouting(ctx);
+        Graph pathForTrainToAllStation =
+                Dijkstra.calculateShortestPathFromSource(
+                        map, map.getNodesByName(firstTrainThatCanCarryPackage.getCurrentLocation()));
 
-      Node pathForTrainToMailDestination =
-          pathForTrainToAllStation.getNodesByName(mailPackage.getSource());
-      LinkedList<Route> routeForTrain =
-          convertNodeToRouteForTrain(ctx, pathForTrainToMailDestination);
-      firstTrainThatCanCarryPackage.setRouteAssigned(routeForTrain);
-      moveTrainToDeliverPackage(firstTrainThatCanCarryPackage);
+        Node pathForTrainToMailSource =
+                pathForTrainToAllStation.getNodesByName(mailPackage.getSource());
+        LinkedList<Route> routeForTrain =
+                convertNodeToRouteForTrain(ctx, pathForTrainToMailSource);
+        firstTrainThatCanCarryPackage.setRouteAssigned(routeForTrain);
+        moveTrainToDeliverPackage(ctx, firstTrainThatCanCarryPackage, mailPackage);
+      }
     }
   }
 
-  private static void moveTrainToDeliverPackage(Train train) {
-    while (train.getTimeToReachDestination() > 0) {
-
+  private static void moveTrainToDeliverPackage(Context ctx, Train train, MailPackage packageToDeliver) {
+    while (train.getTimeToReachDestination() >= 0 && packageToDeliver.getStatus() != MailPackage.DELIVERED) {
       Optional<Route> routeBeforeMoving = train.getCurrentRoute();
       train.moveTrainByOneUnitTime();
       Optional<Route> routeAfterMoving = train.getCurrentRoute();
-      if (train.getTimeToReachDestination() > 0) {
-        //still moving dont do anything
+      List<MailPackage> loaded = new ArrayList<>();
+      List<MailPackage> unloaded = new ArrayList<>();
+      if (train.getTimeToReachDestination() > 0 ) {
+        //placeholder
       } else if (train.getTimeToReachDestination() == 0) {
-        //load package
         //unload package
-        //add routetotrain
+        if(train.getRouteAssigned().get(train.getRouteAssigned().size()-1).getStationB().equalsIgnoreCase(packageToDeliver.getDestination())){
+          //unload train
+
+          //remove from train
+          train.getMailPackages().remove(packageToDeliver);
+          //add to station
+          ctx.getStations().get(packageToDeliver.getDestination()).getMailPackages().add(packageToDeliver);
+          packageToDeliver.setStatus(MailPackage.DELIVERED);
+          unloaded.add(packageToDeliver);
+        }else if (train.getRouteAssigned().get(train.getRouteAssigned().size()-1).getStationB().equalsIgnoreCase(packageToDeliver.getSource())){
+          //load train
+
+          //add to train
+          train.getMailPackages().add(packageToDeliver);
+          //remove from station
+          ctx.getStations().get(packageToDeliver.getSource()).removePackage(packageToDeliver.getName());
+
+          loaded.add(packageToDeliver);
+        }
+        if (packageToDeliver.getStatus() != MailPackage.DELIVERED){
+          Graph map = InitializeSystem.getMapForRouting(ctx);
+          Graph pathForTrainToAllStation =
+                  Dijkstra.calculateShortestPathFromSource(
+                          map, map.getNodesByName(train.getCurrentLocation()));
+          Node pathForTrainToMailDestination =
+                  pathForTrainToAllStation.getNodesByName(packageToDeliver.getDestination());
+          LinkedList<Route> routeForTrain =
+                  convertNodeToRouteForTrain(ctx, pathForTrainToMailDestination);
+
+          String routeToUse = ctx.determineRouteFromLocation(train.getCurrentLocation(), packageToDeliver.getSource());
+          Route route = new Route(routeToUse, train.getCurrentLocation(), packageToDeliver.getSource(),ctx.getDistanceOfRoute(routeToUse));
+          train.getRouteAssigned().add(route);
+          train.getRouteAssigned().addAll(routeForTrain);
+          if(packageToDeliver.getStatus() == MailPackage.TO_DELIVER){
+            packageToDeliver.setStatus(MailPackage.DELIVERING);
+          }
+        }
+
       }
       if (routeBeforeMoving.isPresent()
           && routeAfterMoving.isPresent()
@@ -71,8 +111,8 @@ public class Main {
             currentTime,
             train.getCurrentLocation(),
             train,
-            Collections.emptyList(),
-            Collections.emptyList(),
+            loaded,
+            unloaded,
             routeBeforeMoving.get().getStationA(),
             routeBeforeMoving.get().getStationB(),
             routeBeforeMoving.get().getRouteName(),
@@ -82,14 +122,14 @@ public class Main {
                 currentTime,
                 train.getCurrentLocation(),
                 train,
-                Collections.emptyList(),
-                Collections.emptyList(),
+                loaded,
+                unloaded,
                 routeBeforeMoving.get().getStationA(),
                 routeBeforeMoving.get().getStationB(),
                 routeBeforeMoving.get().getRouteName(),
-                100000);
+                0);
       }
-      if (train.getTimeToReachDestination() == 0) {
+      if (packageToDeliver.getStatus() == MailPackage.DELIVERED) {
         train.setRouteAssigned(Collections.emptyList());
       }
       currentTime = currentTime + 1;
